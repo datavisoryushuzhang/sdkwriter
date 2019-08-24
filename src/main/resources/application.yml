@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: sdkwriter
+  kafka:
+    bootstrap-servers:
+      - 127.0.0.1:9092
+    streams:
+      state-dir: "data"
+      application-id: sdkwriter
+      properties:
+        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
+        default.key.serde:  org.apache.kafka.common.serialization.Serdes$StringSerde
+        spring:
+          json:
+            trusted.packages: com.fasterxml.jackson.databind.node
+            value.default.type: com.fasterxml.jackson.databind.JsonNode
+
+
+# SDK Writer configs
+sdkwriter:
+  record:
+    client_name_key: u1
+    app_name_key: a2
+    event_name_key: event_name
+  input_topic: sdk-events
+  output_topic: client-events
