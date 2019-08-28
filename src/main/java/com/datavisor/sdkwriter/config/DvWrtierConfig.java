@@ -15,35 +15,36 @@
  * from DataVisor, Inc.
  */
 
-package com.datavisor.sdkwriter.service;
+package com.datavisor.sdkwriter.config;
 
-import com.datavisor.sdkwriter.config.SdkWriterProperties;
+import com.datavisor.sdkwriter.service.DvWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@Component
-public class DvWriterImpl implements DvWriter {
-    private static final Logger logger = LoggerFactory.getLogger(DvWriter.class);
-
-    @Autowired
-    private SdkWriterProperties properties;
+@Configuration
+public class DvWrtierConfig {
+    private static final Logger logger = LoggerFactory.getLogger(DvWrtierConfig.class);
 
     @Autowired
     private ObjectMapper mapper;
 
-    @Override
-    public boolean write(String key, JsonNode value) {
-        try {
-            logger.info("key: {}, value: \n{}", key,
-                    mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value));
-        } catch (JsonProcessingException e) {
-            logger.error("error process json", e);
-        }
-        return false;
+    @Bean
+    @ConditionalOnMissingBean(DvWriter.class)
+    public DvWriter defaultDvWriter() {
+        return (key, value) -> {
+            try {
+                logger.info("key: {}, value: \n{}", key,
+                        mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value));
+            } catch (JsonProcessingException e) {
+                logger.error("error process json", e);
+            }
+            return false;
+        };
     }
 }

@@ -18,32 +18,33 @@
 package com.datavisor.sdkwriter.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.beans.factory.annotation.Value;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
+import org.apache.kafka.streams.kstream.Predicate;
+import org.apache.kafka.streams.kstream.Windowed;
 
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SdkUtil {
 
-    private static final String DELIMITER = "_";
+    private static final String WINDOW_SPLIT = "-";
+    private static final String WINDOW_TIME_FORMAT = "yyyyMMdd_HHmmss";
+    private static final String rawlogPrefix = "rawlog.";
 
-    @Value("${sdkwriter.record.client_name_key}")
-    private static String clientNameKey;
-
-    @Value("${sdkwriter.record.app_name_key}")
-    private static String appNameKey;
-
-    @Value("${sdkwriter.record.event_name_key}")
-    private static String eventNameKey;
-
-    public static Function<JsonNode, Boolean> validate(String... keys) {
-        return jsondata -> {
+    /**
+     * Validate sdk event
+     *
+     * @param keys the key fields must have
+     * @return A {@link Predicate} with given key fields
+     */
+    public static Predicate<String, ? super JsonNode> validate(String... keys) {
+        return (k, v) -> {
             for (String key : keys) {
-                if (!jsondata.hasNonNull(key)) {
+                if (!v.hasNonNull(key)) {
                     return false;
                 }
             }
@@ -51,20 +52,55 @@ public class SdkUtil {
         };
     }
 
-    public static BiFunction<String, JsonNode, String> buildSdkGroupKeys(String... keys) {
+    /**
+     * Group a sdk message with the given key fields
+     *
+     * @param keys the key fields
+     * @return
+     */
+    public static KeyValueMapper<String, ? super JsonNode, String> buildSdkGroupKeys(
+            String delimiter, String... keys) {
         return (msgKey, jsondata) -> Stream.of(keys)
                 .map(jsondata::get)
                 .map(JsonNode::asText)
-                .collect(Collectors.joining(DELIMITER));
+                .collect(Collectors.joining(delimiter));
     }
 
-    public static Map<String, String> parseSdkGroupKeys(String key) {
-        String[] fields = key.split(DELIMITER);
+    /**
+     * Build the windowed key
+     *
+     * @return
+     */
+    public static KeyValueMapper<Windowed<String>, ? super JsonNode, String> buildWindowedKey(
+            String windowDelimiter) {
+        return (key, value) -> {
+            String startTime = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
+                    .format(key.window().startTime().atOffset(ZoneOffset.UTC));
+            String endTime = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
+                    .format(key.window().endTime().atOffset(ZoneOffset.UTC));
+            return key.key() + windowDelimiter + startTime + WINDOW_SPLIT + endTime;
+        };
+    }
+
+    public static Map<String, String> parseSdkGroupKeys(String key, String delimiter,
+            String windowDelimiter, String... keyFields) {
+        System.out.println(key);
+        String[] fields = key.split(windowDelimiter)[0].split(delimiter);
         Map<String, String> keys = new HashMap<>();
-        keys.put(clientNameKey, fields[0]);
-        keys.put(appNameKey, fields[1]);
-        keys.put(eventNameKey, fields[2]);
+        keys.put(keyFields[0], fields[0]);
+        keys.put(keyFields[1], fields[1]);
+        keys.put(keyFields[2], fields[2]);
 
         return keys;
+    }
+
+    public static String buildObjectName(String key, String windowDelimiter,
+            String sdkFolder, String consumerId) {
+        String[] clientKey = key.split(windowDelimiter);
+        String objectTimestamp = clientKey[1].split(WINDOW_SPLIT)[0];
+        String objectSuffix = clientKey[0].replaceAll("/", "_");
+
+        return sdkFolder + "/" + objectTimestamp.split("_")[0] + "/" + rawlogPrefix
+                + objectTimestamp + "." + objectSuffix + "." + consumerId;
     }
 }

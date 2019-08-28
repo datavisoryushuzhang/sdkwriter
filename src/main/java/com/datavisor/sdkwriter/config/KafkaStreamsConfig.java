@@ -24,22 +24,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.state.Stores;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 
 import java.time.Duration;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 @Configuration
 @EnableKafka
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
 
+    private static final int IN_MEMORY_STORE_RETENCTION_TIME = 24 * 60;
     @Autowired
     private SdkWriterProperties sdkWriterProperties;
 
@@ -49,47 +53,65 @@ public class KafkaStreamsConfig {
     @Autowired
     private DvWriter writer;
 
+    @Value("${sdkwriter.record.client_name_key}")
+    private String clientNameKey;
+
+    @Value("${sdkwriter.record.app_name_key}")
+    private String appNameKey;
+
+    @Value("${sdkwriter.record.event_name_key}")
+    private String eventNameKey;
+
     @Bean
     public KStream<String, JsonNode> kafkaStream(StreamsBuilder builder) {
         KStream<String, JsonNode> records = builder.stream(sdkWriterProperties.getInputTopic());
 
-        String[] sdkkeys = { sdkWriterProperties.getRecord().getClientNameKey(),
-                sdkWriterProperties.getRecord().getAppNameKey(),
-                sdkWriterProperties.getRecord().getEventNameKey() };
+        String[] sdkkeys = { clientNameKey, appNameKey, eventNameKey };
         records
-                .filter((key, jsondata) -> SdkUtil.validate(sdkkeys).apply(jsondata))
-                .groupBy((key, jsonData) -> SdkUtil.buildSdkGroupKeys(sdkkeys).apply(key, jsonData))
+                .filter(SdkUtil.validate(sdkkeys))
+                .groupBy(
+                        SdkUtil.buildSdkGroupKeys(sdkWriterProperties.getRecord().getKeyDelimiter(),
+                                sdkkeys))
                 // Windowed by 5 Minutes and wait another 30s for late arrive records
-                .windowedBy(TimeWindows.of(Duration.ofMinutes(5)).grace(Duration.ofSeconds(30)))
+                .windowedBy(TimeWindows
+                        .of(Duration.ofMinutes(sdkWriterProperties.getWindow().getWindowTime()))
+                        .grace(Duration.ofSeconds(
+                                sdkWriterProperties.getWindow().getWaitFor())))
                 .aggregate(
                         // initializer
                         mapper::createArrayNode,
                         // aggregator
-                        (key, node, agg) -> agg.add(node)
+                        (key, node, agg) -> agg.add(node),
+                        // Custom state store
+                        Materialized.<String, ArrayNode>as(
+                                Stores.inMemoryWindowStore("stream-agg-store",
+                                        Duration.ofMinutes(IN_MEMORY_STORE_RETENCTION_TIME),
+                                        Duration.ofMinutes(
+                                                sdkWriterProperties.getWindow().getWindowTime()),
+                                        false)).withLoggingDisabled().withKeySerde(Serdes.String())
                 )
-                // write to output kafka
-                .toStream((key, value) -> key.key() + "@" + DateTimeFormatter.ISO_DATE_TIME
-                        .format(key.window().startTime().atOffset(ZoneOffset.UTC)) + "-" +
-                        DateTimeFormatter.ISO_DATE_TIME
-                                .format(key.window().endTime().atOffset(ZoneOffset.UTC)))
+                // Action interval settings
+                //                .suppress(Suppressed.untilTimeLimit(
+                //                        Duration.ofMinutes(sdkWriterProperties.getWindow().getWriterWindow()),
+                //                        Suppressed.BufferConfig
+                //                                .maxBytes(sdkWriterProperties.getWindow().getMemLimit())))
+                // Write to file
+                .toStream(SdkUtil.buildWindowedKey(sdkWriterProperties.getWindow().getDelimiter()))
+                .peek((key, value) -> writer.write(key, value))
+                // write to output stream
+                .mapValues(ArrayNode::size)
                 .to(sdkWriterProperties.getOutputTopic(),
                         Produced.keySerde(Serdes.String()));
 
         return records;
     }
 
-    @Bean
-    public KTable<String, ArrayNode> outputStream(StreamsBuilder builder) {
-        KTable<String, ArrayNode> outputs = builder.table(sdkWriterProperties.getOutputTopic());
-
-        outputs
-                // Action interval: 5min,  Only reserve the latest record in each key
-                .suppress(Suppressed.untilTimeLimit(Duration.ofMinutes(1),
-                        Suppressed.BufferConfig.maxRecords(24)))
-                //                // Write to file
-                .toStream()
-                .foreach((key, value) -> writer.write(key, value));
-
-        return outputs;
-    }
+    //    @Bean
+    //    public KTable<String, ArrayNode> outputStream(StreamsBuilder builder) {
+    //        KTable<String, ArrayNode> outputs = builder.table(sdkWriterProperties.getOutputTopic());
+    //
+    //        outputs
+    //
+    //        return outputs;
+    //    }
 }

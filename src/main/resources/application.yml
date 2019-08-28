@@ -22,5 +22,20 @@ sdkwriter:
     client_name_key: u1
     app_name_key: a2
     event_name_key: event_name
+    key_delimiter: '_'
   input_topic: sdk-events
   output_topic: client-events
+  sdk_folder: rawdata_sdk
+  # window settings
+  window:
+    # window_delimiter
+    delimiter: '@'
+    # window size for events
+    window_time: 30
+    # wait seconds for late arrive events
+    wait_for: 3
+  # client bucket map
+  buckets:
+    default: datavisor-clientless
+    com.podddd: datavisor-baiguoyuan
+    com.dddd:  datavisor-baiguoyuan

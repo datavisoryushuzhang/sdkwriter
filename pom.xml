@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>1.8</java.version>
-		<kafka.version>2.1.0</kafka.version>
+		<kafka.version>2.3.0</kafka.version>
 	</properties>
 
 	<dependencies>
@@ -47,6 +47,13 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+
+		<!-- aliyun -->
+		<dependency>
+			<groupId>com.aliyun.oss</groupId>
+			<artifactId>aliyun-sdk-oss</artifactId>
+			<version>3.5.0</version>
 		</dependency>
 	</dependencies>
 
