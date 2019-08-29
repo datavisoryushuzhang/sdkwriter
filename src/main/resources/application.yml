@@ -8,8 +8,11 @@ spring:
       state-dir: "data"
       application-id: sdkwriter
       properties:
-        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
-        default.key.serde:  org.apache.kafka.common.serialization.Serdes$StringSerde
+        default:
+          value.serde: org.springframework.kafka.support.serializer.JsonSerde
+          key.serde:  org.apache.kafka.common.serialization.Serdes$StringSerde
+        metrics.recording.level: DEBUG
+        topology.optimization: all
         spring:
           json:
             trusted.packages: com.fasterxml.jackson.databind.node
