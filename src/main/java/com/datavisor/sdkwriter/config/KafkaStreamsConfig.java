@@ -24,10 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.Stores;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -96,15 +93,15 @@ public class KafkaStreamsConfig {
                                         Duration.ofMinutes(
                                                 sdkWriterProperties.getWindow().getWindowTime()),
                                         false))
-                                .withLoggingDisabled()
+                                //                                .withLoggingDisabled()
                                 .withKeySerde(Serdes.String())
                                 .withValueSerde(Serdes.String())
                 )
                 // Action interval settings
-                //                .suppress(Suppressed.untilTimeLimit(
-                //                        Duration.ofMinutes(sdkWriterProperties.getWindow().getWriterWindow()),
-                //                        Suppressed.BufferConfig
-                //                                .maxBytes(sdkWriterProperties.getWindow().getMemLimit())))
+                .suppress(Suppressed.untilTimeLimit(
+                        Duration.ofSeconds(sdkWriterProperties.getWindow().getWriterWindow()),
+                        Suppressed.BufferConfig
+                                .maxBytes(sdkWriterProperties.getWindow().getMemLimit())))
                 // Write to file
                 .toStream(SdkUtil.buildWindowedKey(sdkWriterProperties.getWindow().getDelimiter()))
                 .peek((key, value) -> writer.write(key, value))

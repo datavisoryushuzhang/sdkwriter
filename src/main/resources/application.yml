@@ -11,7 +11,7 @@ spring:
         default:
           value.serde: org.springframework.kafka.support.serializer.JsonSerde
           key.serde:  org.apache.kafka.common.serialization.Serdes$StringSerde
-        metrics.recording.level: DEBUG
+        #        metrics.recording.level: DEBUG
         topology.optimization: all
         spring:
           json:
@@ -37,6 +37,7 @@ sdkwriter:
     window_time: 30
     # wait seconds for late arrive events
     wait_for: 3
+    writer_window: 300
   # client bucket map
   buckets:
     default: datavisor-clientless
