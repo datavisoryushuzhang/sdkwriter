@@ -18,10 +18,10 @@
 package com.datavisor.sdkwriter.config;
 
 import com.datavisor.sdkwriter.service.DvWriter;
+import com.datavisor.sdkwriter.util.JsonUtil;
 import com.datavisor.sdkwriter.util.SdkUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
@@ -79,16 +79,26 @@ public class KafkaStreamsConfig {
                                 sdkWriterProperties.getWindow().getWaitFor())))
                 .aggregate(
                         // initializer
-                        mapper::createArrayNode,
+                        String::new,
                         // aggregator
-                        (key, node, agg) -> agg.add(node),
+                        (key, node, agg) -> {
+                            String stringNode = JsonUtil.printJson(mapper, node);
+                            StringBuilder stringBuilder = new StringBuilder();
+                            return agg.isEmpty() ?
+                                    stringNode :
+                                    stringBuilder.append(agg).append("\n").append(stringNode)
+                                            .toString();
+                        },
                         // Custom state store
-                        Materialized.<String, ArrayNode>as(
+                        Materialized.<String, String>as(
                                 Stores.inMemoryWindowStore("stream-agg-store",
                                         Duration.ofMinutes(IN_MEMORY_STORE_RETENCTION_TIME),
                                         Duration.ofMinutes(
                                                 sdkWriterProperties.getWindow().getWindowTime()),
-                                        false)).withLoggingDisabled().withKeySerde(Serdes.String())
+                                        false))
+                                .withLoggingDisabled()
+                                .withKeySerde(Serdes.String())
+                                .withValueSerde(Serdes.String())
                 )
                 // Action interval settings
                 //                .suppress(Suppressed.untilTimeLimit(
@@ -99,7 +109,7 @@ public class KafkaStreamsConfig {
                 .toStream(SdkUtil.buildWindowedKey(sdkWriterProperties.getWindow().getDelimiter()))
                 .peek((key, value) -> writer.write(key, value))
                 // write to output stream
-                .mapValues(ArrayNode::size)
+                .mapValues(String::length)
                 .to(sdkWriterProperties.getOutputTopic(),
                         Produced.keySerde(Serdes.String()));
 

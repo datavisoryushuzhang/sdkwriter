@@ -20,9 +20,7 @@ package com.datavisor.sdkwriter.service;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.PutObjectResult;
 import com.datavisor.sdkwriter.config.SdkWriterProperties;
-import com.datavisor.sdkwriter.util.JsonUtil;
 import com.datavisor.sdkwriter.util.SdkUtil;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +51,7 @@ public class OssWriter implements DvWriter {
     private SdkWriterProperties properties;
 
     @Override
-    public boolean write(String key, JsonNode value) {
+    public boolean write(String key, String value) {
         String[] keyFields = { properties.getRecord().getClientNameKey(),
                 properties.getRecord().getAppNameKey(), properties.getRecord().getEventNameKey() };
         Map<String, String> keys = SdkUtil
@@ -75,7 +73,7 @@ public class OssWriter implements DvWriter {
         logger.info("put object {} to bucket: {}", objectName, bucketName);
         long start = System.currentTimeMillis();
         PutObjectResult result = ossClient.putObject(bucketName, objectName,
-                new ByteArrayInputStream(JsonUtil.printJsonPerLine(mapper, value).getBytes()));
+                new ByteArrayInputStream(value.getBytes()));
         logger.info("tooks {} ms to upload {}", System.currentTimeMillis() - start, objectName);
         return result != null;
     }

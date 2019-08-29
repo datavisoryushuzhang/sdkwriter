@@ -17,8 +17,6 @@
 
 package com.datavisor.sdkwriter.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public interface DvWriter {
-    boolean write(String key, JsonNode value);
+    boolean write(String key, String value);
 }

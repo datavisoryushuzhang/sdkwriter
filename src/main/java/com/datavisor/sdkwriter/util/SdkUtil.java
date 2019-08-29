@@ -71,7 +71,7 @@ public class SdkUtil {
      *
      * @return
      */
-    public static KeyValueMapper<Windowed<String>, ? super JsonNode, String> buildWindowedKey(
+    public static <V> KeyValueMapper<Windowed<String>, V, String> buildWindowedKey(
             String windowDelimiter) {
         return (key, value) -> {
             String startTime = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
