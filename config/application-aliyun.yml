@@ -15,7 +15,7 @@ spring:
 sdkwriter:
   record:
     client_name_key: u1
-    app_name_key: a1
+    app_name_key: a2
     event_name_key: event_name
     key_delimiter: '_'
   input_topic: sdk-events
