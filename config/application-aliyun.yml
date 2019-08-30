@@ -24,7 +24,7 @@ sdkwriter:
   # window settings
   window:
     delimiter: '@'
-    window_time: 60
+    window_time: 300
     wait_for: 3
     writer_window: 30
     mem_limit: 1_000_000
