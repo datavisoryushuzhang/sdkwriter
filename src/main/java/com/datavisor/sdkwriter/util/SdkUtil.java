@@ -22,6 +22,7 @@ import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.Windowed;
 
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -74,10 +75,14 @@ public class SdkUtil {
     public static <V> KeyValueMapper<Windowed<String>, V, String> buildWindowedKey(
             String windowDelimiter) {
         return (key, value) -> {
+
+            Instant startTimeInstant = key.window().startTime();
+            Instant endTimeInstant = key.window().endTime();
+
             String startTime = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
-                    .format(key.window().startTime().atOffset(ZoneOffset.UTC));
+                    .format(startTimeInstant.atOffset(ZoneOffset.UTC));
             String endTime = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
-                    .format(key.window().endTime().atOffset(ZoneOffset.UTC));
+                    .format(endTimeInstant.atOffset(ZoneOffset.UTC));
             return key.key() + windowDelimiter + startTime + WINDOW_SPLIT + endTime;
         };
     }
@@ -94,13 +99,14 @@ public class SdkUtil {
         return keys;
     }
 
-    public static String buildObjectName(String key, String windowDelimiter,
-            String sdkFolder, String consumerId) {
-        String[] clientKey = key.split(windowDelimiter);
-        String objectTimestamp = clientKey[1].split(WINDOW_SPLIT)[0];
-        String objectSuffix = clientKey[0].replaceAll("/", "_");
+    public static String buildObjectName(Windowed<String> key, String sdkFolder, long timestamp,
+            long windowTime) {
+        String objectTimestamp = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
+                .format(Instant.ofEpochMilli(Math.floorDiv(timestamp, windowTime) * windowTime)
+                        .atOffset(ZoneOffset.UTC));
+        String objectSuffix = key.key().replaceAll("/", "_");
 
         return sdkFolder + "/" + objectTimestamp.split("_")[0] + "/" + rawlogPrefix
-                + objectTimestamp + "." + objectSuffix + "." + consumerId;
+                + objectTimestamp + "." + objectSuffix;
     }
 }

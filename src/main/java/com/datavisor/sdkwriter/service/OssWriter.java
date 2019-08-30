@@ -18,7 +18,8 @@
 package com.datavisor.sdkwriter.service;
 
 import com.aliyun.oss.OSS;
-import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.AppendObjectRequest;
+import com.aliyun.oss.model.AppendObjectResult;
 import com.datavisor.sdkwriter.config.SdkWriterProperties;
 import com.datavisor.sdkwriter.util.SdkUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,8 +32,6 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.Optional;
-
-import static com.datavisor.sdkwriter.util.SdkUtil.buildObjectName;
 
 @Service
 @Profile("aliyun")
@@ -67,15 +66,18 @@ public class OssWriter implements DvWriter {
             ossClient.createBucket(bucketName);
         }
 
-        String objectName = buildObjectName(key, properties.getWindow().getDelimiter(),
-                properties.getSdkFolder(), Thread.currentThread().getName());
-
-        logger.info("put object {} to bucket: {}", objectName, bucketName);
+        // get current object size
+        long currentPosition = ossClient.doesObjectExist(bucketName, key) ?
+                ossClient.getSimplifiedObjectMeta(bucketName, key).getSize() :
+                0L;
+        logger.info("put object {} to bucket: {}", key, bucketName);
         long start = System.currentTimeMillis();
-        PutObjectResult result = ossClient.putObject(bucketName, objectName,
+        AppendObjectRequest request = new AppendObjectRequest(bucketName, key,
                 new ByteArrayInputStream(value.getBytes()));
-        logger.info("tooks {} ms to upload {}", System.currentTimeMillis() - start, objectName);
+        request.setPosition(currentPosition);
+
+        AppendObjectResult result = ossClient.appendObject(request);
+        logger.info("tooks {} ms to append {}", System.currentTimeMillis() - start, key);
         return result != null;
     }
-
 }

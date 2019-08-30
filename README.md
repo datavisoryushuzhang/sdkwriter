@@ -13,3 +13,9 @@ Kafka stream API is a Java library provides some stream operations. The 2 most i
 #### KStream
 
 #### KTable
+
+## How to build
+```bash
+cd sdkwriter
+./mvnw install dockerfile:build
+```

@@ -18,12 +18,15 @@
 package com.datavisor.sdkwriter.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PostConstruct;
 import java.util.Map;
 
 @Configuration
 @ConfigurationProperties(prefix = "sdkwriter")
+@RefreshScope
 public class SdkWriterProperties {
     private Record record;
     private String inputTopic;
@@ -168,5 +171,10 @@ public class SdkWriterProperties {
         public void setMemLimit(long memLimit) {
             this.memLimit = memLimit;
         }
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.format("buckets: %s", getBuckets());
     }
 }

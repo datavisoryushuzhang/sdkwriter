@@ -25,9 +25,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.Stores;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -41,6 +43,8 @@ import java.time.Duration;
 public class KafkaStreamsConfig {
 
     private static final int IN_MEMORY_STORE_RETENCTION_TIME = 24 * 60;
+    private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsConfig.class);
+
     @Autowired
     private SdkWriterProperties sdkWriterProperties;
 
@@ -50,28 +54,22 @@ public class KafkaStreamsConfig {
     @Autowired
     private DvWriter writer;
 
-    @Value("${sdkwriter.record.client_name_key}")
-    private String clientNameKey;
-
-    @Value("${sdkwriter.record.app_name_key}")
-    private String appNameKey;
-
-    @Value("${sdkwriter.record.event_name_key}")
-    private String eventNameKey;
-
     @Bean
     public KStream<String, JsonNode> kafkaStream(StreamsBuilder builder) {
         KStream<String, JsonNode> records = builder.stream(sdkWriterProperties.getInputTopic());
 
-        String[] sdkkeys = { clientNameKey, appNameKey, eventNameKey };
         records
-                .filter(SdkUtil.validate(sdkkeys))
+                .filter(SdkUtil.validate(sdkWriterProperties.getRecord().getClientNameKey(),
+                        sdkWriterProperties.getRecord().getAppNameKey(),
+                        sdkWriterProperties.getRecord().getEventNameKey()))
                 .groupBy(
                         SdkUtil.buildSdkGroupKeys(sdkWriterProperties.getRecord().getKeyDelimiter(),
-                                sdkkeys))
+                                sdkWriterProperties.getRecord().getClientNameKey(),
+                                sdkWriterProperties.getRecord().getAppNameKey(),
+                                sdkWriterProperties.getRecord().getEventNameKey()))
                 // Windowed by 5 Minutes and wait another 30s for late arrive records
                 .windowedBy(TimeWindows
-                        .of(Duration.ofMinutes(sdkWriterProperties.getWindow().getWindowTime()))
+                        .of(Duration.ofSeconds(sdkWriterProperties.getWindow().getWriterWindow()))
                         .grace(Duration.ofSeconds(
                                 sdkWriterProperties.getWindow().getWaitFor())))
                 .aggregate(
@@ -90,8 +88,8 @@ public class KafkaStreamsConfig {
                         Materialized.<String, String>as(
                                 Stores.inMemoryWindowStore("stream-agg-store",
                                         Duration.ofMinutes(IN_MEMORY_STORE_RETENCTION_TIME),
-                                        Duration.ofMinutes(
-                                                sdkWriterProperties.getWindow().getWindowTime()),
+                                        Duration.ofSeconds(
+                                                sdkWriterProperties.getWindow().getWriterWindow()),
                                         false))
                                 //                                .withLoggingDisabled()
                                 .withKeySerde(Serdes.String())
@@ -103,22 +101,39 @@ public class KafkaStreamsConfig {
                         Suppressed.BufferConfig
                                 .maxBytes(sdkWriterProperties.getWindow().getMemLimit())))
                 // Write to file
-                .toStream(SdkUtil.buildWindowedKey(sdkWriterProperties.getWindow().getDelimiter()))
-                .peek((key, value) -> writer.write(key, value))
+                .toStream()
+                .transformValues(WriteToBuckets::new)
                 // write to output stream
                 .mapValues(String::length)
+                .selectKey(SdkUtil.buildWindowedKey(sdkWriterProperties.getWindow().getDelimiter()))
                 .to(sdkWriterProperties.getOutputTopic(),
                         Produced.keySerde(Serdes.String()));
 
         return records;
     }
 
-    //    @Bean
-    //    public KTable<String, ArrayNode> outputStream(StreamsBuilder builder) {
-    //        KTable<String, ArrayNode> outputs = builder.table(sdkWriterProperties.getOutputTopic());
-    //
-    //        outputs
-    //
-    //        return outputs;
-    //    }
+    public class WriteToBuckets
+            implements ValueTransformerWithKey<Windowed<String>, String, String> {
+        private ProcessorContext context;
+
+        @Override public void init(ProcessorContext context) {
+            this.context = context;
+        }
+
+        @Override public String transform(Windowed<String> readOnlyKey,
+                String value) {
+            String key = SdkUtil.buildObjectName(readOnlyKey,
+                    sdkWriterProperties.getSdkFolder(), context.timestamp(),
+                    Duration.ofSeconds(
+                            sdkWriterProperties.getWindow().getWindowTime())
+                            .toMillis());
+
+            writer.write(key, value);
+            return value;
+        }
+
+        @Override public void close() {
+
+        }
+    }
 }

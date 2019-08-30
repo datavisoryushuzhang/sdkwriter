@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.config.server.EnableConfigServer;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -14,6 +15,7 @@ import java.net.UnknownHostException;
 import java.util.Properties;
 
 @SpringBootApplication
+@EnableConfigServer
 public class SdkwriterApplication implements EnvironmentAware {
     private static final Logger logger = LoggerFactory.getLogger(SdkwriterApplication.class);
     private static final String CLIENT_PREFIX = "sdkwriter-";
