@@ -34,12 +34,11 @@ sdkwriter:
     # window_delimiter
     delimiter: '@'
     # window size for events
-    window_time: 30
+    window_time: 300
     # wait seconds for late arrive events
     wait_for: 3
-    writer_window: 300
+    writer_window: 30
+    mem_limit: 1_000_000
   # client bucket map
   buckets:
     default: datavisor-clientless
-    com.podddd: datavisor-baiguoyuan
-    com.dddd:  datavisor-baiguoyuan
