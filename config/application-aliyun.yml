@@ -1,0 +1,40 @@
+spring:
+  kafka:
+    bootstrap-servers:
+      - 10.150.16.42:9092
+      - 10.150.23.16:9092
+      - 10.150.33.124:9092
+    streams:
+      cache_max_size_buffering: 100_000_000
+      properties:
+        commit.interval.ms: 60000
+        max.request.size: 100_000_000
+        num.stream.threads: 2
+#        commit.interval.ms: 1000
+
+sdkwriter:
+  record:
+    client_name_key: u1
+    app_name_key: a2
+    event_name_key: event_name
+    key_delimiter: '_'
+  input_topic: sdk-events
+  output_topic: client-events
+  sdk_folder: rawdata_sdk
+  # window settings
+  window:
+    delimiter: '@'
+    window_time: 300
+    wait_for: 3
+    writer_window: 30
+    mem_limit: 1_000_000
+  # client bucket map
+  buckets:
+    default: datavisor-clientless
+    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda
+
+
+aliyun:
+  endpoint: https://oss-cn-beijing.aliyuncs.com
+  access_id: '{cipher}e61c331fc8178b9ef9c24f6522ea7b5b377dcbf453db4b92b30cafb601981b380e673a473d147df876b9036f5fd330be'
+  access_key: '{cipher}d2b10651bea52b97367313ff13f26dca38a897dfff19b0fba19c2e5a18be224fc1806f436e838a041f64f296d1a2706c'
