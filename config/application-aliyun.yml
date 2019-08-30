@@ -18,7 +18,7 @@ sdkwriter:
     app_name_key: a2
     event_name_key: event_name
     key_delimiter: '_'
-  input_topic: sdk-events
+  input_topic: sdk-events-dev
   output_topic: client-events
   sdk_folder: rawdata_sdk
   # window settings
@@ -30,8 +30,8 @@ sdkwriter:
     mem_limit: 1_000_000
   # client bucket map
   buckets:
-    default: datavisor-clientless
-    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda
+    default: datavisor-clientless-dev
+    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda-dev
 
 
 aliyun:
