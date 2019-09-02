@@ -25,29 +25,28 @@ import com.datavisor.sdkwriter.util.SdkUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
-@Profile("aliyun")
 public class OssWriter implements DvWriter {
     private static final Logger logger = LoggerFactory.getLogger(OssWriter.class);
     private static final String DEFAULT_BUCKET_KEY = "default";
     private static final String DEFAULT_BUCKET = "datavisor-clientless";
 
-    @Autowired
     private OSS ossClient;
 
-    @Autowired
     private ObjectMapper mapper;
 
-    @Autowired
     private SdkWriterProperties properties;
+
+    public OssWriter(OSS ossClient, ObjectMapper mapper,
+            SdkWriterProperties properties) {
+        this.ossClient = ossClient;
+        this.mapper = mapper;
+        this.properties = properties;
+    }
 
     @Override
     public boolean write(String key, String value) {

@@ -17,13 +17,16 @@
 
 package com.datavisor.sdkwriter.config;
 
+import com.aliyun.oss.OSS;
 import com.datavisor.sdkwriter.service.DvWriter;
+import com.datavisor.sdkwriter.service.OssWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,6 +36,12 @@ public class DvWrtierConfig {
 
     @Autowired
     private ObjectMapper mapper;
+
+    @Bean
+    @ConditionalOnProperty(name = "aliyun.endpoint")
+    public DvWriter ossWriter(OSS ossClient, ObjectMapper mapper, SdkWriterProperties properties) {
+        return new OssWriter(ossClient, mapper, properties);
+    }
 
     @Bean
     @ConditionalOnMissingBean(DvWriter.class)

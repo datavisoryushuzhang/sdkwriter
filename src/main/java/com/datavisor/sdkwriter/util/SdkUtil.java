@@ -107,6 +107,6 @@ public class SdkUtil {
         String objectSuffix = key.key().replaceAll("/", "_");
 
         return sdkFolder + "/" + objectTimestamp.split("_")[0] + "/" + rawlogPrefix
-                + objectTimestamp + "." + objectSuffix;
+                + objectTimestamp + "." + objectSuffix + "." + Thread.currentThread().getName();
     }
 }
