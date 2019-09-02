@@ -37,5 +37,5 @@ sdkwriter:
 
 aliyun:
   endpoint: https://oss-cn-beijing.aliyuncs.com
-  access_id: '{cipher}e61c331fc8178b9ef9c24f6522ea7b5b377dcbf453db4b92b30cafb601981b380e673a473d147df876b9036f5fd330be'
-  access_key: '{cipher}d2b10651bea52b97367313ff13f26dca38a897dfff19b0fba19c2e5a18be224fc1806f436e838a041f64f296d1a2706c'
+  access_id: '{cipher}8289ca814ee36c66b6f02a7471a06a1985d324e70feb9083767793837154a63fec923a52723135b1067eab0a2d598224'
+  access_key: '{cipher}de206e4923b1b6b1e1bab38e3f4662505b7d224c683cadef55b176c38e86e17f0d166465c377732c66de1407b6aafce0'
