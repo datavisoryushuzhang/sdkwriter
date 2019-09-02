@@ -31,8 +31,8 @@ sdkwriter:
     mem_limit: 1_000_000
   # client bucket map
   buckets:
-    default: datavisor-clientless-test
-    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda-test
+    default: datavisor-clientless-dev
+    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda-dev
 
 
 aliyun:
