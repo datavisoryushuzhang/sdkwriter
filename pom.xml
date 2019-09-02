@@ -18,7 +18,7 @@
     <properties>
         <java.version>1.8</java.version>
         <kafka.version>2.3.0</kafka.version>
-        <docker.registry>docker-registry.dv-api.com</docker.registry>
+        <docker.registry>docker-registry.dv-api.com/cloud</docker.registry>
     </properties>
 
     <dependencyManagement>
