@@ -19,3 +19,7 @@ Kafka stream API is a Java library provides some stream operations. The 2 most i
 cd sdkwriter
 ./mvnw install dockerfile:build
 ```
+## How to deploy
+```bash
+docker run -e SPRING_PROFILES_ACTIVE=<your_profile> —name sdkwriter -d docker-registry.dv-api.com/library/sdkwriter:0.1.0
+```
