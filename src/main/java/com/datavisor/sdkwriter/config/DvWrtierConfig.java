@@ -39,8 +39,8 @@ public class DvWrtierConfig {
 
     @Bean
     @ConditionalOnProperty(name = "aliyun.endpoint")
-    public DvWriter ossWriter(OSS ossClient, ObjectMapper mapper, SdkWriterProperties properties) {
-        return new OssWriter(ossClient, mapper, properties);
+    public DvWriter ossWriter(OSS ossClient, SdkWriterProperties properties) {
+        return new OssWriter(ossClient, properties);
     }
 
     @Bean

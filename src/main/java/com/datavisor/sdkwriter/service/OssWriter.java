@@ -22,12 +22,10 @@ import com.aliyun.oss.model.AppendObjectRequest;
 import com.aliyun.oss.model.AppendObjectResult;
 import com.datavisor.sdkwriter.config.SdkWriterProperties;
 import com.datavisor.sdkwriter.util.SdkUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.Optional;
 
 public class OssWriter implements DvWriter {
@@ -37,22 +35,15 @@ public class OssWriter implements DvWriter {
 
     private OSS ossClient;
 
-    private ObjectMapper mapper;
-
     private SdkWriterProperties properties;
 
-    public OssWriter(OSS ossClient, ObjectMapper mapper,
-            SdkWriterProperties properties) {
+    public OssWriter(OSS ossClient, SdkWriterProperties properties) {
         this.ossClient = ossClient;
-        this.mapper = mapper;
         this.properties = properties;
     }
 
     @Override
     public boolean write(String key, String value) {
-        String[] keyFields = { properties.getRecord().getClientNameKey(),
-                properties.getRecord().getAppNameKey(), properties.getRecord().getEventNameKey() };
-
         String bucketName = Optional.ofNullable(SdkUtil.getSdkBucketNameFromObjectKey(key,
                 properties.getRecord().getKeyDelimiter()))
                 .map(name -> properties.getBuckets().get(name))
@@ -66,6 +57,9 @@ public class OssWriter implements DvWriter {
         long currentPosition = ossClient.doesObjectExist(bucketName, key) ?
                 ossClient.getSimplifiedObjectMeta(bucketName, key).getSize() :
                 0L;
+        // append newline to the end
+        value = value.concat("\n");
+
         logger.info("put object {} to bucket: {}", key, bucketName);
         long start = System.currentTimeMillis();
         AppendObjectRequest request = new AppendObjectRequest(bucketName, key,
