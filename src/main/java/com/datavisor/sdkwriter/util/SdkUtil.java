@@ -25,8 +25,7 @@ import org.apache.kafka.streams.kstream.Windowed;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,15 +86,16 @@ public class SdkUtil {
         };
     }
 
-    public static Map<String, String> parseSdkGroupKeys(String key, String delimiter,
-            String windowDelimiter, String... keyFields) {
-        System.out.println(key);
-        String[] fields = key.split(windowDelimiter)[0].split(delimiter);
-        Map<String, String> keys = new HashMap<>();
-        for (int i = 0; i < keyFields.length; i++) {
-            keys.put(keyFields[i], fields[i]);
-        }
-        return keys;
+    public static String getSdkBucketNameFromObjectKey(String objectKey, String delimiter) {
+        System.out.println(objectKey);
+        return Optional.of(objectKey)
+                //split the full path: /rawdata_sdk/2019XXXX/XXXXXXXXXXXXx
+                .map(k -> k.split("/", 3)).map(fullPath -> SdkUtil.safeGet(fullPath, 2))
+                // split the filename: rawlog.2019XXXX_XXXXXX.XXXXXXXX
+                .map(n -> n.split("\\.", 3)).map(fileName -> SdkUtil.safeGet(fileName, 2))
+                // split client key: xxxxxxx_xxxx_xxxx
+                .map(c -> c.split(delimiter)).map(clientKey -> SdkUtil.safeGet(clientKey, 0))
+                .orElse(null);
     }
 
     public static String buildObjectName(Windowed<String> key, String sdkFolder, long timestamp,
@@ -107,5 +107,9 @@ public class SdkUtil {
 
         return sdkFolder + "/" + objectTimestamp.split("_")[0] + "/" + rawlogPrefix
                 + objectTimestamp + "." + objectSuffix + "." + Thread.currentThread().getName();
+    }
+
+    private static String safeGet(String[] strings, int index) {
+        return strings.length <= index ? null : strings[index];
     }
 }

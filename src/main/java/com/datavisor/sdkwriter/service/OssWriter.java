@@ -52,12 +52,9 @@ public class OssWriter implements DvWriter {
     public boolean write(String key, String value) {
         String[] keyFields = { properties.getRecord().getClientNameKey(),
                 properties.getRecord().getAppNameKey(), properties.getRecord().getEventNameKey() };
-        Map<String, String> keys = SdkUtil
-                .parseSdkGroupKeys(key, properties.getRecord().getKeyDelimiter(),
-                        properties.getWindow().getDelimiter(), keyFields);
-        String clientName = keys.get(properties.getRecord().getClientNameKey());
 
-        String bucketName = Optional.ofNullable(clientName)
+        String bucketName = Optional.ofNullable(SdkUtil.getSdkBucketNameFromObjectKey(key,
+                properties.getRecord().getKeyDelimiter()))
                 .map(name -> properties.getBuckets().get(name))
                 .orElse(properties.getBuckets().getOrDefault(DEFAULT_BUCKET_KEY, DEFAULT_BUCKET));
         if (!ossClient.doesBucketExist(bucketName)) {
