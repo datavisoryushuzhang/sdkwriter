@@ -31,7 +31,7 @@ sdkwriter:
   # client bucket map
   buckets:
     default: datavisor-clientless
-    com.pagoda.buy-X8UtjLSX/DyPbJJ6f: datavisor-pagoda
+    com.pagoda.buy-X8UtjLSX-DyPbJJ6f: datavisor-pagoda
 
 
 aliyun:

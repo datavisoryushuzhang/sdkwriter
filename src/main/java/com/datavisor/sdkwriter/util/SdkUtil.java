@@ -92,10 +92,9 @@ public class SdkUtil {
         System.out.println(key);
         String[] fields = key.split(windowDelimiter)[0].split(delimiter);
         Map<String, String> keys = new HashMap<>();
-        keys.put(keyFields[0], fields[0]);
-        keys.put(keyFields[1], fields[1]);
-        keys.put(keyFields[2], fields[2]);
-
+        for (int i = 0; i < keyFields.length; i++) {
+            keys.put(keyFields[i], fields[i]);
+        }
         return keys;
     }
 
@@ -104,7 +103,7 @@ public class SdkUtil {
         String objectTimestamp = DateTimeFormatter.ofPattern(WINDOW_TIME_FORMAT)
                 .format(Instant.ofEpochMilli(Math.floorDiv(timestamp, windowTime) * windowTime)
                         .atOffset(ZoneOffset.UTC));
-        String objectSuffix = key.key().replaceAll("/", "_");
+        String objectSuffix = key.key().replaceAll("/", "-");
 
         return sdkFolder + "/" + objectTimestamp.split("_")[0] + "/" + rawlogPrefix
                 + objectTimestamp + "." + objectSuffix + "." + Thread.currentThread().getName();
