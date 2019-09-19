@@ -10,6 +10,7 @@ spring:
         commit.interval.ms: 60000
         max.request.size: 100_000_000
         num.stream.threads: 2
+        default.deserialization.exception.handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
 #        commit.interval.ms: 1000
 
 sdkwriter:
